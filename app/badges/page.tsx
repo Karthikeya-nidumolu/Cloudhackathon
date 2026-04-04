@@ -33,6 +33,27 @@ export default function BadgesPage() {
       } else {
         setUser(firebaseUser);
         setLoading(false);
+        // Load existing badges from Firestore
+        const loadExistingBadges = async () => {
+          try {
+            const badgeRef = doc(db, "users", firebaseUser.uid, "badges", "earned");
+            const snap = await getDoc(badgeRef);
+            if (snap.exists()) {
+              const data = snap.data();
+              let existingIds: string[] = [];
+              if (data.badges && typeof data.badges === "object") {
+                existingIds = Object.keys(data.badges);
+              } else if (data.ids && Array.isArray(data.ids)) {
+                existingIds = data.ids;
+              }
+              console.log("Badges page - loaded existing:", existingIds);
+              setEarnedIds(existingIds);
+            }
+          } catch (e) {
+            console.error("Failed to load existing badges:", e);
+          }
+        };
+        loadExistingBadges();
       }
     });
     return () => unsub();

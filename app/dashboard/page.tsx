@@ -10,7 +10,7 @@ import BadgeToast from "@/components/BadgeToast";
 
 import { db } from "@/lib/firebase";
 import { logoutUser, getCurrentUser } from "@/lib/auth";
-import { doc, onSnapshot, collection, setDoc, serverTimestamp, getDocs } from "firebase/firestore";
+import { doc, onSnapshot, collection, setDoc, serverTimestamp, getDocs, getDoc } from "firebase/firestore";
 
 import { ALL_BADGES, Badge, computeEarnedBadgeIds, syncBadgesToFirestore, RARITY_COLORS } from "@/lib/badges";
 import CalendarHeatmap from "react-calendar-heatmap";
@@ -154,6 +154,7 @@ export default function Dashboard() {
     }
   }, []);
 
+  // ── INITIAL AUTH AND BADGE LOADING ─────────────────────────────────────────────
   useEffect(() => {
     const currentUser = getCurrentUser();
     if (!currentUser) {
@@ -168,6 +169,29 @@ export default function Dashboard() {
     const unsubDb = onSnapshot(userRef, (snap) => {
       if (snap.exists()) setUserData(snap.data());
     });
+
+    // Load existing badges from Firestore to prevent duplicate toasts
+    const loadExistingBadges = async () => {
+      try {
+        const badgeRef = doc(db, "users", currentUser.uid, "badges", "earned");
+        const snap = await getDoc(badgeRef);
+        if (snap.exists()) {
+          const data = snap.data();
+          let existingIds: string[] = [];
+          if (data.badges && typeof data.badges === "object") {
+            existingIds = Object.keys(data.badges);
+          } else if (data.ids && Array.isArray(data.ids)) {
+            existingIds = data.ids;
+          }
+          console.log("Loaded existing badges from Firestore:", existingIds);
+          prevEarnedRef.current = existingIds;
+          setEarnedIds(existingIds);
+        }
+      } catch (e) {
+        console.error("Failed to load existing badges:", e);
+      }
+    };
+    loadExistingBadges();
 
     return () => unsubDb();
   }, [router]);
@@ -190,10 +214,11 @@ export default function Dashboard() {
             merged[courseId] = courseData;
           }
         });
+        console.log("Dashboard progress merged:", merged);
         return merged;
       });
       setProgressLoaded(true);
-      console.log("Progress merged from Firebase:", data);
+      console.log("Firebase progress data received:", data);
     });
     return () => unsub();
   }, [user]);
@@ -229,12 +254,16 @@ export default function Dashboard() {
     }
   };
 
+  // ── COMPUTE AND SYNC BADGES ──────────────────────────────────────────────────
   useEffect(() => {
     if (!user) return;
+    console.log("Computing badges with progressData:", JSON.stringify(progressData, null, 2));
     const computed = computeEarnedBadgeIds(progressData);
+    console.log("Computed earned badges:", computed);
 
     syncBadgesToFirestore(user.uid, computed)
       .then((merged) => {
+        console.log("Synced badges from Firestore:", merged);
         const prev = prevEarnedRef.current;
         const newlyEarned = merged.filter((id) => !prev.includes(id));
 
