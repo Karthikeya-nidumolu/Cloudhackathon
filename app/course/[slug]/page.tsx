@@ -149,17 +149,7 @@ export default function CoursePage() {
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const savedProgressRef = useRef<number>(0); // Store saved progress to apply when player ready
   const initialSeekDoneRef = useRef<boolean>(false); // Track if initial seek completed
-
-  // Get saved progress from localStorage for instant access on reload
-  const getCachedProgress = () => {
-    if (typeof window === 'undefined') return 0;
-    const cached = localStorage.getItem(`course-progress-${slug}`);
-    return cached ? parseInt(cached, 10) : 0;
-  };
-
-  const cachedProgress = getCachedProgress();
-  savedProgressRef.current = cachedProgress; // Set ref immediately
-  const [progress, setProgress] = useState(cachedProgress);
+  const [progress, setProgress] = useState(0);
   const [user, setUser] = useState<any>(null);
 
   // tab state
@@ -191,6 +181,18 @@ export default function CoursePage() {
     const unsub = onAuthStateChanged(auth, (u) => setUser(u));
     return () => unsub();
   }, []);
+
+  // ── LOAD CACHED PROGRESS from localStorage on mount (instant restore) ────────
+  useEffect(() => {
+    if (!slug || typeof window === 'undefined') return;
+    const cached = localStorage.getItem(`course-progress-${slug}`);
+    if (cached) {
+      const parsed = parseInt(cached, 10);
+      savedProgressRef.current = parsed;
+      setProgress(parsed);
+      console.log("Restored cached progress:", parsed + "%");
+    }
+  }, [slug]);
 
   // ── LOAD SAVED PROGRESS from Firestore ─────────────────────────────────────
   useEffect(() => {
