@@ -716,9 +716,9 @@ export default function Dashboard() {
                     if (value.count >= 2) return "color-scale-2";
                     return "color-scale-1";
                   }}
-                  tooltipDataAttrs={(value) => ({
-                    'data-tip': value ? `${value.date}: ${value.count} activities` : "No activity",
-                  })}
+                  tooltipDataAttrs={(value: any) => ({
+                    "data-tip": value ? `${value.date}: ${value.count} activities` : "No activity",
+                  } as any)}
                   showWeekdayLabels
                 />
                   </div>
