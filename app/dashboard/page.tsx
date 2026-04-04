@@ -68,8 +68,23 @@ export default function Dashboard() {
 
   const [user, setUser] = useState<any>(null);
   const [userData, setUserData] = useState<any>(null);
-  const [progressData, setProgressData] = useState<any>({});
+  // Load cached progress from localStorage for instant display
+  const loadCachedProgress = () => {
+    if (typeof window === 'undefined') return {};
+    const cached: Record<string, { progress: number }> = {};
+    const courses = ['aws', 'devops', 'ai', 'docker', 'kubernetes', 'python', 'javascript', 'react', 'typescript', 'git', 'sql', 'linux'];
+    courses.forEach(course => {
+      const saved = localStorage.getItem(`course-progress-${course}`);
+      if (saved) {
+        cached[course] = { progress: parseInt(saved, 10) };
+      }
+    });
+    return cached;
+  };
+  const [progressData, setProgressData] = useState<any>(loadCachedProgress);
+  const [progressLoaded, setProgressLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [earnedIds, setEarnedIds] = useState<string[]>([]);
   const [toastBadge, setToastBadge] = useState<Badge | null>(null);
@@ -157,18 +172,62 @@ export default function Dashboard() {
     return () => unsubDb();
   }, [router]);
 
+  // ── LOAD SAVED PROGRESS from Firestore with merge to preserve local cache ─────
   useEffect(() => {
     if (!user) return;
     const ref = collection(db, "users", user.uid, "progress");
     const unsub = onSnapshot(ref, (snapshot) => {
-      const data: any = {};
+      const data: Record<string, { progress: number }> = {};
       snapshot.docs.forEach((d) => {
-        data[d.id] = d.data();
+        data[d.id] = d.data() as { progress: number };
       });
-      setProgressData(data);
+      // Merge Firebase data with cached localStorage data (Firebase takes precedence)
+      setProgressData((prev) => {
+        const merged = { ...prev };
+        // Update with Firebase data (real-time updates)
+        Object.entries(data).forEach(([courseId, courseData]) => {
+          if (courseData && typeof courseData.progress === "number") {
+            merged[courseId] = courseData;
+          }
+        });
+        return merged;
+      });
+      setProgressLoaded(true);
+      console.log("Progress merged from Firebase:", data);
     });
     return () => unsub();
   }, [user]);
+
+  // Manual refresh function to force reload progress from Firestore
+  const handleRefreshProgress = async () => {
+    if (!user) return;
+    setIsRefreshing(true);
+    try {
+      const progressRef = collection(db, "users", user.uid, "progress");
+      const snapshot = await getDocs(progressRef);
+      const data: Record<string, { progress: number }> = {};
+      snapshot.docs.forEach((d) => {
+        data[d.id] = d.data() as { progress: number };
+      });
+      // Merge with localStorage cache
+      setProgressData((prev) => {
+        const merged = { ...prev };
+        Object.entries(data).forEach(([courseId, courseData]) => {
+          if (courseData && typeof courseData.progress === "number") {
+            merged[courseId] = courseData;
+            // Update localStorage too
+            localStorage.setItem(`course-progress-${courseId}`, String(courseData.progress));
+          }
+        });
+        return merged;
+      });
+      console.log("Progress manually refreshed:", data);
+    } catch (e) {
+      console.error("Failed to refresh progress:", e);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -402,7 +461,27 @@ export default function Dashboard() {
                 Welcome, {userData?.name || user?.email}
               </h2>
 
-              <h3 className="text-xl mb-4">Your Courses</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl">Your Courses</h3>
+                <button
+                  onClick={handleRefreshProgress}
+                  disabled={isRefreshing}
+                  className="text-sm text-cyan-400 hover:text-cyan-300 transition flex items-center gap-1 disabled:opacity-50"
+                  title="Refresh progress from server"
+                >
+                  {isRefreshing ? (
+                    <>
+                      <span className="animate-spin">↻</span>
+                      Refreshing...
+                    </>
+                  ) : (
+                    <>
+                      <span>↻</span>
+                      Refresh
+                    </>
+                  )}
+                </button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
                 {courses.map((course) => (
                   <div

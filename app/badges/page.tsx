@@ -38,19 +38,41 @@ export default function BadgesPage() {
     return () => unsub();
   }, [router]);
 
-  // Load progress
+  // Load progress - merge with localStorage cache for instant display
   useEffect(() => {
     if (!user) return;
     console.log("Loading progress for user:", user.uid);
+
+    // Load cached progress first
+    const cached: Record<string, { progress: number }> = {};
+    const courses = ['aws', 'devops', 'ai', 'docker', 'kubernetes', 'python', 'javascript', 'react', 'typescript', 'git', 'sql', 'linux'];
+    courses.forEach(course => {
+      const saved = localStorage.getItem(`course-progress-${course}`);
+      if (saved) {
+        cached[course] = { progress: parseInt(saved, 10) };
+      }
+    });
+    setProgressData(cached);
+
+    // Then subscribe to Firebase for real-time updates
     const ref = collection(db, "users", user.uid, "progress");
     const unsub = onSnapshot(ref, (snapshot) => {
-      const data: any = {};
+      const data: Record<string, { progress: number }> = {};
       snapshot.docs.forEach((d) => {
-        data[d.id] = d.data();
+        data[d.id] = d.data() as { progress: number };
         console.log(`Course ${d.id}:`, d.data());
       });
-      console.log("Progress data loaded:", data);
-      setProgressData(data);
+      console.log("Progress data loaded from Firebase:", data);
+      // Merge Firebase data with cached data
+      setProgressData((prev) => {
+        const merged = { ...prev };
+        Object.entries(data).forEach(([courseId, courseData]) => {
+          if (courseData && typeof courseData.progress === "number") {
+            merged[courseId] = courseData;
+          }
+        });
+        return merged;
+      });
     }, (err) => {
       console.error("Firestore error loading progress:", err);
     });
