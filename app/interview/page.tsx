@@ -272,7 +272,7 @@ export default function InterviewPage() {
                         <h4 className="text-lg font-bold mb-1">{company.name}</h4>
                         <p className="text-sm text-gray-400">{company.description}</p>
                       </button>
-                      <!-- AI Button overlay -->
+                      {/* AI Button overlay */}
                       <button
                         onClick={() => handleAiMode(company.id)}
                         className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-3 py-1 rounded-full font-medium hover:from-purple-600 hover:to-pink-600"
