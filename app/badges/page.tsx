@@ -49,7 +49,6 @@ export default function BadgesPage() {
           } else if (data.ids && Array.isArray(data.ids)) {
             existingIds = data.ids;
           }
-          console.log("Badges page - loaded existing:", existingIds);
           setEarnedIds(existingIds);
         }
       } catch (e) {
@@ -62,7 +61,6 @@ export default function BadgesPage() {
   // Load progress - merge with localStorage cache for instant display
   useEffect(() => {
     if (!user) return;
-    console.log("Loading progress for user:", user.uid);
 
     // Load cached progress first
     const cached: Record<string, { progress: number }> = {};
@@ -81,9 +79,7 @@ export default function BadgesPage() {
       const data: Record<string, { progress: number }> = {};
       snapshot.docs.forEach((d) => {
         data[d.id] = d.data() as { progress: number };
-        console.log(`Course ${d.id}:`, d.data());
       });
-      console.log("Progress data loaded from Firebase:", data);
       // Merge Firebase data with cached data
       setProgressData((prev: Record<string, { progress: number }>) => {
         const merged = { ...prev };
@@ -110,11 +106,9 @@ export default function BadgesPage() {
   useEffect(() => {
     if (!user) return;
     const computed = earnedBadgeIds(progressData);
-    console.log("Badges page - computed:", computed);
 
     syncBadgesToFirestore(user.uid, computed)
       .then((merged) => {
-        console.log("Badges page - merged:", merged);
         setEarnedIds(merged);
       })
       .catch((err) => {
@@ -367,15 +361,15 @@ export default function BadgesPage() {
                     {/* Title */}
                     <div
                       className="font-bold text-sm mb-1"
-                      style={{ color: isEarned ? "#fff" : "#6B7280" }}
+                      style={{ color: isEarned ? "#fff" : "#9CA3AF" }}
                     >
-                      {isEarned ? badge.title : "???"}
+                      {badge.title}
                     </div>
 
                     {/* Description */}
                     <div
                       className="text-xs leading-relaxed"
-                      style={{ color: isEarned ? "#9CA3AF" : "#4B5563" }}
+                      style={{ color: isEarned ? "#9CA3AF" : "#6B7280" }}
                     >
                       {badge.description}
                     </div>

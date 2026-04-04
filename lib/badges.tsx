@@ -655,7 +655,6 @@ export async function syncBadgesToFirestore(
       .sort((a, b) => (b[1].earnedAt || 0) - (a[1].earnedAt || 0))
       .map(([id]) => id);
 
-    console.log("syncBadgesToFirestore - returning:", sortedIds);
     return sortedIds;
   } catch (error) {
     console.error("Error syncing badges:", error);

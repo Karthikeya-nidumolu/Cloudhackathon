@@ -183,7 +183,6 @@ export default function Dashboard() {
           } else if (data.ids && Array.isArray(data.ids)) {
             existingIds = data.ids;
           }
-          console.log("Loaded existing badges from Firestore:", existingIds);
           prevEarnedRef.current = existingIds;
           setEarnedIds(existingIds);
         }
@@ -214,11 +213,9 @@ export default function Dashboard() {
             merged[courseId] = courseData;
           }
         });
-        console.log("Dashboard progress merged:", merged);
         return merged;
       });
       setProgressLoaded(true);
-      console.log("Firebase progress data received:", data);
     });
     return () => unsub();
   }, [user]);
@@ -246,7 +243,6 @@ export default function Dashboard() {
         });
         return merged;
       });
-      console.log("Progress manually refreshed:", data);
     } catch (e) {
       console.error("Failed to refresh progress:", e);
     } finally {
@@ -257,13 +253,10 @@ export default function Dashboard() {
   // ── COMPUTE AND SYNC BADGES ──────────────────────────────────────────────────
   useEffect(() => {
     if (!user) return;
-    console.log("Computing badges with progressData:", JSON.stringify(progressData, null, 2));
     const computed = computeEarnedBadgeIds(progressData);
-    console.log("Computed earned badges:", computed);
 
     syncBadgesToFirestore(user.uid, computed)
       .then((merged) => {
-        console.log("Synced badges from Firestore:", merged);
         const prev = prevEarnedRef.current;
         const newlyEarned = merged.filter((id) => !prev.includes(id));
 
