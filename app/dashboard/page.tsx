@@ -182,7 +182,7 @@ export default function Dashboard() {
         data[d.id] = d.data() as { progress: number };
       });
       // Merge Firebase data with cached localStorage data (Firebase takes precedence)
-      setProgressData((prev) => {
+      setProgressData((prev: Record<string, { progress: number }>) => {
         const merged = { ...prev };
         // Update with Firebase data (real-time updates)
         Object.entries(data).forEach(([courseId, courseData]) => {
@@ -210,7 +210,7 @@ export default function Dashboard() {
         data[d.id] = d.data() as { progress: number };
       });
       // Merge with localStorage cache
-      setProgressData((prev) => {
+      setProgressData((prev: Record<string, { progress: number }>) => {
         const merged = { ...prev };
         Object.entries(data).forEach(([courseId, courseData]) => {
           if (courseData && typeof courseData.progress === "number") {

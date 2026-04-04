@@ -64,7 +64,7 @@ export default function BadgesPage() {
       });
       console.log("Progress data loaded from Firebase:", data);
       // Merge Firebase data with cached data
-      setProgressData((prev) => {
+      setProgressData((prev: Record<string, { progress: number }>) => {
         const merged = { ...prev };
         Object.entries(data).forEach(([courseId, courseData]) => {
           if (courseData && typeof courseData.progress === "number") {
